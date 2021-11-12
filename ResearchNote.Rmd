@@ -1,0 +1,1459 @@
+---
+title: "ResearchNote"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+if (!require(pacman)) install.packages("pacman")
+library(pacman)
+p_load(grid,
+       gridExtra,
+       png,
+       magick, 
+       usmap,
+       interplot,
+       dotwhisker,
+       modelsummary,
+       # Visualization
+       lubridate,
+       # Applied
+       broom,
+       knitr,
+       # dependency
+       scales,
+       tidyverse,
+       jiebaR,
+       httr,
+       drhutools,
+       qs)
+set.seed(19970921)
+# Theme setup
+theme_set(theme_minimal())
+```
+
+
+# sggb
+```{r}
+
+# 抓取网络数据
+
+## sggb干部
+
+# Page1
+
+caseUrls0 <- read_html("https://www.ccdi.gov.cn/scdc/sggb/djcf/index.html") %>% 
+  html_nodes(".list_news_dl a") %>% 
+  html_attrs()
+
+# Pages left
+
+allCaseUrls <- caseUrls0
+for(a in 40:50)
+{
+caseUrls <- read_html(paste0("https://www.ccdi.gov.cn/scdc/sggb/djcf/index_", a, ".html")) %>% 
+  html_nodes(".list_news_dl a") %>% 
+  html_attrs()
+allCaseUrls <- c(allCaseUrls, caseUrls)
+print(a)
+}
+
+for(b in 801:length(allCaseUrls))
+{
+allCaseUrls[b] <- allCaseUrls[[b]][1]
+print(b)
+}
+
+allCaseUrls <- sub("../../../",  "www.ccdi.gov.cn/", allCaseUrls)
+allCaseUrls <- sub("\\./",  "www.ccdi.gov.cn/scdc/sggb/djcf/", allCaseUrls)
+
+for(c in 801:length(allCaseUrls))
+{
+url <- paste0("https://", allCaseUrls[c])
+cat(content(GET(url), "text"), file = paste0("/Users/zhumeng/Desktop/Fall semester_2021/CCDI/sggb", "/", c, ".html"))
+print(c)
+}
+```
+
+
+```{r}
+## 中管干部
+
+# Page1
+
+caseUrls0 <- read_html("https://www.ccdi.gov.cn/scdc/zggb/djcf/index.html") %>% 
+  html_nodes(".list_news_dl a") %>% 
+  html_attrs()
+
+# Pages left
+
+allCaseUrls <- caseUrls0
+for(a in 1:11)
+{
+caseUrls <- read_html(paste0("https://www.ccdi.gov.cn/scdc/zggb/djcf/index_", a, ".html")) %>% 
+  html_nodes(".list_news_dl a") %>% 
+  html_attrs()
+allCaseUrls <- c(allCaseUrls, caseUrls)
+print(a)
+}
+
+for(b in 1:length(allCaseUrls))
+{
+allCaseUrls[b] <- allCaseUrls[[b]][1]
+print(b)
+}
+
+allCaseUrls <- sub("../../../",  "www.ccdi.gov.cn/", allCaseUrls)
+allCaseUrls <- sub("\\./",  "www.ccdi.gov.cn/scdc/zggb/djcf/", allCaseUrls)
+
+for(c in 150:length(allCaseUrls))
+{
+url <- paste0("https://", allCaseUrls[c])
+cat(content(GET(url), "text"), file = paste0("data", "/", c, ".html"))
+print(c)
+}
+
+```
+
+
+
+```{r}
+
+# 数据抽取
+
+title <- c()
+p1 <- c()
+p2 <- c()
+p3 <- c()
+CV <- c()
+
+for (folder_num in 1:length(dir("data/pages"))) {
+  folder <- paste0("data/pages/", dir("data/pages")[folder_num])
+  folder <- "data/pages/zggb"
+  for(a in 1:length(dir(folder)))
+{
+  url <- paste0(folder, "/", list.files(folder)[a])
+  if (stringr::str_detect(unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text())[1], "徐才厚"))
+  {
+    title[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[1]
+    p1[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[2]
+    p2[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[3]
+    p3[a] <- paste0(unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[4], "/n", unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[5], "/n", unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[6])
+  }
+  
+  else if (stringr::str_detect(unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text())[1], "令计划"))
+  {
+    title[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[1]
+    p1[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[4]
+    p2[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[5]
+    p3[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[6]
+  }
+  
+  else if (stringr::str_detect(unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text())[1], "令计划"))
+  {
+    title[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[1]
+    p1[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[3]
+    p2[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[5]
+    p3[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[6]
+  }
+  
+  else if (stringr::str_detect(unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text())[1], "郭伯雄"))
+  {
+    title[a] <- paste0(unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[2], unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[3])
+    p1[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[4]
+    p2[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[5]
+    p3[a] <- paste0(unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[6], "/n", unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[7], "/n", unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[8])
+  }
+  
+  
+  
+  else if (is.na(unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[1])) {
+    print(url)
+  }
+  else if (nchar(unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[1]) != 0) 
+    {
+      title[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[1]
+      
+      if (stringr::str_detect(unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text())[2], "日前")) {
+        p1[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[2]
+        p2[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[3]
+        p3[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[4]
+      }
+      
+      else if (
+        stringr::str_detect(unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text())[2], "根据")
+      )
+      {
+        p1[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[2]
+        p2[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[3]
+        p3[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[4]
+      }
+      else if (
+        stringr::str_detect(unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text())[4], "日前")
+      )
+      {
+        p1[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[4]
+        p2[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[5]
+        p3[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[6]
+      }
+      else{
+        p1[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[3]
+        p2[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[4]
+        p3[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[5]
+      }
+      
+      
+      }
+  else{
+      title[a] <- paste0(unlist(
+        read_html(url) %>% 
+          html_nodes(".tit , p") %>% 
+          html_text() %>% 
+          gsub("[[:space:]]", "", .))[2], unlist(
+        read_html(url) %>% 
+          html_nodes(".tit , p") %>% 
+          html_text() %>% 
+          gsub("[[:space:]]", "", .))[3])
+      
+      if (
+        stringr::str_detect(unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text())[4], "日前")
+      ) {
+        p1[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[4]
+        p2[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[5]
+        p3[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[6]
+      }
+      
+      else if (
+        stringr::str_detect(unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text())[5], "日前")
+      ) {
+        p1[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[5]
+        p2[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[6]
+        p3[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[7]
+      }
+      
+      else {
+        p1[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[3]
+        p2[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[4]
+        p3[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[5]
+      }
+    }
+  }
+  
+  
+print(a)
+}
+
+for (c in 1:length(p3)) {
+    if (
+      is.na(p3[c]))
+      {
+        p3[c] <- NA
+        CV[c] <- 1
+      }
+      else if (stringr::str_detect(p3[c], "简历")) {
+        CV[c] <- 1
+      p3[c] <- NA
+      }
+      else{
+        p3[c] <- p3[c]
+        CV[c] <- 0
+      }
+  }
+  
+data <- data.frame(title, p1, p2, p3, CV)
+
+write.csv(data, "data/centralMan.csv")
+
+```
+
+
+# centralMan
+
+```{R centralMan, eval = FALSE}
+# Page1
+
+caseUrls0 <- read_html("https://www.ccdi.gov.cn/scdc/zggb/djcf/index.html") %>% 
+  html_nodes(".list_news_dl a") %>% 
+  html_attrs()
+
+# Pages left
+
+allCaseUrls <- caseUrls0
+for(a in 1:11)
+{
+caseUrls <- read_html(paste0("https://www.ccdi.gov.cn/scdc/zggb/djcf/index_", a, ".html")) %>% 
+  html_nodes(".list_news_dl a") %>% 
+  html_attrs()
+allCaseUrls <- c(allCaseUrls, caseUrls)
+print(a)
+}
+
+for(b in 1:length(allCaseUrls))
+{
+allCaseUrls[b] <- allCaseUrls[[b]][1]
+print(b)
+}
+
+allCaseUrls <- sub("../../../",  "www.ccdi.gov.cn/", allCaseUrls)
+allCaseUrls <- sub("\\./",  "www.ccdi.gov.cn/scdc/zggb/djcf/", allCaseUrls)
+
+
+caseTitles <- c()
+caseTexts <- c()
+for(b in 234:length(allCaseUrls))
+{
+url <- paste0("https://", allCaseUrls[b])
+caseTitles[b] <- read_html(url) %>% 
+  html_nodes(".tit") %>% 
+  html_text()
+Text <- read_html(url) %>% 
+  html_nodes("p") %>% 
+  html_text()
+  print(b)
+caseTexts[b] <- paste0(unlist(Text), collapse='\n')
+}
+
+data <- na.omit(cbind(as.data.frame(caseTitles), as.data.frame(caseTexts)))
+centralMan <- rbind(centralMan, data)
+
+allCaseUrls <- as.data.frame(allCaseUrls)
+centralMan$caseUrls <- c()
+
+
+write_csv(as.data.frame(centralMan), "data/centralMan.csv")
+```
+
+# 中央一级党和国家机关、国企和金融单位干部
+
+```{R centralMan, eval = FALSE}
+# Page1
+
+caseUrls0 <- read_html("https://www.ccdi.gov.cn/scdc/zyyj/djcf/index.html") %>% 
+  html_nodes(".list_news_dl a") %>% 
+  html_attrs()
+
+# Pages left
+
+allCaseUrls <- caseUrls0
+for(a in 1:6)
+{
+caseUrls <- read_html(paste0("https://www.ccdi.gov.cn/scdc/zyyj/djcf/index_", a, ".html")) %>% 
+  html_nodes(".list_news_dl a") %>% 
+  html_attrs()
+allCaseUrls <- c(allCaseUrls, caseUrls)
+print(a)
+}
+
+for(b in 1:length(allCaseUrls))
+{
+allCaseUrls[b] <- allCaseUrls[[b]][1]
+print(b)
+}
+
+allCaseUrls <- sub("../../../",  "www.ccdi.gov.cn/", allCaseUrls)
+allCaseUrls <- sub("\\./",  "www.ccdi.gov.cn/scdc/zyyj/djcf/", allCaseUrls)
+
+
+caseTitles <- c()
+caseTexts <- c()
+for(b in 123:length(allCaseUrls))
+{
+url <- paste0("https://", allCaseUrls[b])
+caseTitles[b] <- read_html(url) %>% 
+  html_nodes(".tit") %>% 
+  html_text()
+Text <- read_html(url) %>% 
+  html_nodes("p") %>% 
+  html_text()
+  print(b)
+caseTexts[b] <- paste0(unlist(Text), collapse='\n')
+}
+
+data <- na.omit(cbind(as.data.frame(caseTitles), as.data.frame(caseTexts)))
+centralMan <- rbind(centralMan, data)
+
+centralMan$category <- "中央一级党和国家机关、国企和金融单位干部"
+write_csv(as.data.frame(centralMan), "data/central1Man.csv")
+```
+
+```{R}
+
+centralMan <- read_csv("data/centralMan.csv")
+
+central1Man <- read_csv("data/central1Man.csv")
+
+centralMan$rank <- "中管干部"
+
+fullData <- rbind(centralMan, central1Man)
+allCaseUrls1 <- as.data.frame(allCaseUrls1)
+allCaseUrls2 <- as.data.frame(allCaseUrls2)
+names(allCaseUrls1) <- ""
+names(allCaseUrls2) <- ""
+Urls <- rbind(allCaseUrls1, allCaseUrls2)
+names(Urls) <- "caseUrls"
+fullData <- cbind(fullData, Urls)
+write_csv(fullData, "data/fullData.csv")
+```
+
+```{R University}
+
+# Page
+
+page <- "https://www.ccdi.gov.cn/toutiao/202109/t20210905_249547.html"
+
+allTitle <- c()
+allText <- c()
+
+for (i in 1:32) {
+  titleNode <- paste0("#fkzl8_", i, " font")
+  textNode <- paste0("#fkzl8_", i, " p")
+  # Title
+  Title <- read_html(page) %>% 
+  html_nodes(titleNode) %>% 
+  html_text() %>% 
+  paste0(unlist(.), collapse='\n')
+  # Text
+  Text <- read_html(page) %>% 
+  html_nodes(textNode) %>% 
+  html_text() %>% 
+  paste0(unlist(.), collapse='\n')
+  # dataframe
+  allTitle[i] <- Title
+  allText[i] <- Text
+  print(i)
+}
+
+university <- data.frame(allTitle, allText) %>% 
+  dplyr::rename(Title = allTitle, Text = allText)
+
+write_csv(university, "data/university.csv")
+
+
+```
+
+
+
+```{R patrol6}
+
+# Page
+
+page <- "https://www.ccdi.gov.cn/toutiao/202102/t20210208_235661.html"
+
+allTitle <- c()
+allText <- c()
+
+for (i in 1:32) {
+  titleNode <- paste0("#fkzl_", i, " font")
+  textNode <- paste0("#fkzl_", i, " p")
+  # Title
+  Title <- read_html(page) %>% 
+  html_nodes(titleNode) %>% 
+  html_text() %>% 
+  paste0(unlist(.), collapse='\n')
+  # Text
+  Text <- read_html(page) %>% 
+  html_nodes(textNode) %>% 
+  html_text() %>% 
+  paste0(unlist(.), collapse='\n')
+  # dataframe
+  allTitle[i] <- Title
+  allText[i] <- Text
+  print(i)
+}
+
+patrol6 <- data.frame(allTitle, allText) %>% 
+  dplyr::rename(Title = allTitle, Text = allText)
+
+write_csv(patrol6, "data/patrol6.csv")
+
+
+```
+
+```{R patrol5}
+
+# Page
+
+page <- "https://www.ccdi.gov.cn/toutiao/202008/t20200823_224256.html"
+
+allTitle <- c()
+allText <- c()
+
+for (i in 1:32) {
+  titleNode <- paste0("#fkzl_", i, " font")
+  textNode <- paste0("#fkzl_", i, " p")
+  # Title
+  Title <- read_html(page) %>% 
+  html_nodes(titleNode) %>% 
+  html_text() %>% 
+  paste0(unlist(.), collapse='\n')
+  # Text
+  Text <- read_html(page) %>% 
+  html_nodes(textNode) %>% 
+  html_text() %>% 
+  paste0(unlist(.), collapse='\n')
+  # dataframe
+  allTitle[i] <- Title
+  allText[i] <- Text
+  print(i)
+}
+
+patrol5 <- data.frame(allTitle, allText) %>% 
+  dplyr::rename(Title = allTitle, Text = allText)
+
+write_csv(patrol5, "data/patrol5.csv")
+
+
+```
+
+```{R patrol4}
+
+# Page
+
+page <- "https://www.ccdi.gov.cn/toutiao/202001/t20200110_207506.html"
+
+allTitle <- c()
+allText <- c()
+
+for (i in 1:32) {
+  titleNode <- paste0("#fkzl_", i, " font")
+  textNode <- paste0("#fkzl_", i, " p")
+  # Title
+  Title <- read_html(page) %>% 
+  html_nodes(titleNode) %>% 
+  html_text() %>% 
+  paste0(unlist(.), collapse='\n')
+  # Text
+  Text <- read_html(page) %>% 
+  html_nodes(textNode) %>% 
+  html_text() %>% 
+  paste0(unlist(.), collapse='\n')
+  # dataframe
+  allTitle[i] <- Title
+  allText[i] <- Text
+  print(i)
+}
+
+patrol4 <- data.frame(allTitle, allText) %>% 
+  dplyr::rename(Title = allTitle, Text = allText)
+
+write_csv(patrol4, "data/patrol4.csv")
+
+
+```
+
+```{R patrol4}
+
+# Page
+
+page <- "https://www.ccdi.gov.cn/special/19zyxsgz/slxs_19zyxsgz/fkqk3_19zyxsgz/201908/t20190803_198330.html"
+
+caseUrls <- read_html(page) %>% 
+  html_nodes(".TRS_Editor a") %>% 
+  html_attrs()
+
+for(b in 1:length(caseUrls))
+{
+caseUrls[b] <- caseUrls[[b]][1]
+print(b)
+}
+
+caseTitles <- c()
+caseTexts <- c()
+
+for(b in 1:length(caseUrls))
+{
+url <- unlist(caseUrls[b])
+caseTitles[b] <- read_html(url) %>% 
+  html_nodes(".tit") %>% 
+  html_text()
+Text <- read_html(url) %>% 
+  html_nodes("p") %>% 
+  html_text()
+  print(b)
+caseTexts[b] <- paste0(unlist(Text), collapse='\n')
+}
+
+data <- na.omit(cbind(as.data.frame(caseTitles), as.data.frame(caseTexts)))
+centralMan <- rbind(centralMan, data)
+
+centralMan$category <- "中央一级党和国家机关、国企和金融单位干部"
+write_csv(as.data.frame(centralMan), "data/central1Man.csv")
+
+
+
+
+allTitle <- c()
+allText <- c()
+
+for (i in 1:32) {
+  titleNode <- paste0("#fkzl_", i, " font")
+  textNode <- paste0("#fkzl_", i, " p")
+  # Title
+  Title <- read_html(page) %>% 
+  html_nodes(titleNode) %>% 
+  html_text() %>% 
+  paste0(unlist(.), collapse='\n')
+  # Text
+  Text <- read_html(page) %>% 
+  html_nodes(textNode) %>% 
+  html_text() %>% 
+  paste0(unlist(.), collapse='\n')
+  # dataframe
+  allTitle[i] <- Title
+  allText[i] <- Text
+  print(i)
+}
+
+patrol4 <- data.frame(allTitle, allText) %>% 
+  dplyr::rename(Title = allTitle, Text = allText)
+
+write_csv(patrol4, "data/patrol4.csv")
+
+
+```
+
+
+```{r}
+
+# 抓取网络数据
+
+## 中管干部
+
+# Page1
+
+caseUrls0 <- read_html("https://www.ccdi.gov.cn/scdc/zggb/djcf/index.html") %>% 
+  html_nodes(".list_news_dl a") %>% 
+  html_attrs()
+
+# Pages left
+
+allCaseUrls <- caseUrls0
+for(a in 1:11)
+{
+caseUrls <- read_html(paste0("https://www.ccdi.gov.cn/scdc/zggb/djcf/index_", a, ".html")) %>% 
+  html_nodes(".list_news_dl a") %>% 
+  html_attrs()
+allCaseUrls <- c(allCaseUrls, caseUrls)
+print(a)
+}
+
+for(b in 1:length(allCaseUrls))
+{
+allCaseUrls[b] <- allCaseUrls[[b]][1]
+print(b)
+}
+
+allCaseUrls <- sub("../../../",  "www.ccdi.gov.cn/", allCaseUrls)
+allCaseUrls <- sub("\\./",  "www.ccdi.gov.cn/scdc/zggb/djcf/", allCaseUrls)
+
+for(c in 150:length(allCaseUrls))
+{
+url <- paste0("https://", allCaseUrls[c])
+cat(content(GET(url), "text"), file = paste0("data", "/", c, ".html"))
+print(c)
+}
+
+```
+
+
+
+
+
+```{r}
+
+# 数据抽取
+
+title <- c()
+p1 <- c()
+p2 <- c()
+p3 <- c()
+CV <- c()
+
+for (folder_num in 1:length(dir("data/pages"))) {
+  folder <- paste0("data/pages/", dir("data/pages")[folder_num])
+  folder <- "data/pages/zggb"
+  for(a in 1:length(dir(folder)))
+{
+  url <- paste0(folder, "/", list.files(folder)[a])
+  if (stringr::str_detect(unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text())[1], "徐才厚"))
+  {
+    title[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[1]
+    p1[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[2]
+    p2[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[3]
+    p3[a] <- paste0(unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[4], "/n", unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[5], "/n", unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[6])
+  }
+  
+  else if (stringr::str_detect(unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text())[1], "令计划"))
+  {
+    title[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[1]
+    p1[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[4]
+    p2[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[5]
+    p3[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[6]
+  }
+  
+  else if (stringr::str_detect(unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text())[1], "令计划"))
+  {
+    title[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[1]
+    p1[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[3]
+    p2[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[5]
+    p3[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[6]
+  }
+  
+  else if (stringr::str_detect(unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text())[1], "郭伯雄"))
+  {
+    title[a] <- paste0(unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[2], unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[3])
+    p1[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[4]
+    p2[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[5]
+    p3[a] <- paste0(unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[6], "/n", unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[7], "/n", unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[8])
+  }
+  
+  
+  
+  else if (is.na(unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[1])) {
+    print(url)
+  }
+  else if (nchar(unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[1]) != 0) 
+    {
+      title[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[1]
+      
+      if (stringr::str_detect(unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text())[2], "日前")) {
+        p1[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[2]
+        p2[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[3]
+        p3[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[4]
+      }
+      
+      else if (
+        stringr::str_detect(unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text())[2], "根据")
+      )
+      {
+        p1[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[2]
+        p2[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[3]
+        p3[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[4]
+      }
+      else if (
+        stringr::str_detect(unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text())[4], "日前")
+      )
+      {
+        p1[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[4]
+        p2[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[5]
+        p3[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[6]
+      }
+      else{
+        p1[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[3]
+        p2[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[4]
+        p3[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[5]
+      }
+      
+      
+      }
+  else{
+      title[a] <- paste0(unlist(
+        read_html(url) %>% 
+          html_nodes(".tit , p") %>% 
+          html_text() %>% 
+          gsub("[[:space:]]", "", .))[2], unlist(
+        read_html(url) %>% 
+          html_nodes(".tit , p") %>% 
+          html_text() %>% 
+          gsub("[[:space:]]", "", .))[3])
+      
+      if (
+        stringr::str_detect(unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text())[4], "日前")
+      ) {
+        p1[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[4]
+        p2[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[5]
+        p3[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[6]
+      }
+      
+      else if (
+        stringr::str_detect(unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text())[5], "日前")
+      ) {
+        p1[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[5]
+        p2[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[6]
+        p3[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[7]
+      }
+      
+      else {
+        p1[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[3]
+        p2[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[4]
+        p3[a] <- unlist(
+      read_html(url) %>% 
+      html_nodes(".tit , p") %>% 
+      html_text() %>% 
+      gsub("[[:space:]]", "", .))[5]
+      }
+    }
+  }
+  
+  
+print(a)
+}
+
+for (c in 1:length(p3)) {
+    if (
+      is.na(p3[c]))
+      {
+        p3[c] <- NA
+        CV[c] <- 1
+      }
+      else if (stringr::str_detect(p3[c], "简历")) {
+        CV[c] <- 1
+      p3[c] <- NA
+      }
+      else{
+        p3[c] <- p3[c]
+        CV[c] <- 0
+      }
+  }
+  
+data <- data.frame(title, p1, p2, p3, CV)
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+
+
+CCDIR_TEXT <- read_csv("data/CCDIR_TEXT.csv")
+central <- CCDIR_TEXT %>% dplyr::filter(rank != "地管干部")
+
+for (a in 1:length(CCDIR_TEXT$caseTitles)) {
+  CCDIR_TEXT$caseTitles[a] <- gsub("[[:space:]]", "", CCDIR_TEXT$caseTitles[a])
+  print(a)
+}
+
+for (b in 1:length(CCDIR_TEXT$caseTexts)) {
+  CCDIR_TEXT$caseTexts[b] <- gsub("[[:space:]]", "", CCDIR_TEXT$caseTexts[b])
+  print(b)
+}
+
+
+
+write_csv(CCDIR_TEXT, "data/CCDIR_TEXT.csv")
+
+a <- 1
+central$CV <- 0
+for (a in 1:length(central$caseTexts)) {
+  P1all <- paste0("日前，", unlist(strsplit(CCDIR_TEXT$caseTexts[a], "日前，"))[2])
+  P1 <- unlist(strsplit(P1all, "经查"))[1]
+  CCDIR_TEXT$P1[a] <- P1
+  P2all <- paste0("经查，", unlist(strsplit(CCDIR_TEXT$caseTexts[a], "经查，"))[2])
+  
+  central$P1[a] <- paste0("日前，", unlist(strsplit(central$caseTexts[a], "日前，"))[2])
+  central$P2[a] <- paste0("经查，", unlist(strsplit(central$caseTexts[a], "经查，"))[2])
+  central$P5[a] <- unlist(strsplit(central$caseTexts[a], paste0(central$PER[a], "简历")))[2]
+  central$P3[a] <- paste0(central$PER, unlist(strsplit(paste0("经查，", unlist(strsplit(central$caseTexts[a], "经查，"))[2]), central$PER[a]))[3])
+  central$P4[a] <- paste0(central$PER, unlist(strsplit(paste0("经查，", unlist(strsplit(central$caseTexts[a], "经查，"))[2]), central$PER)[a])[4])
+  # central$P3[a] <- unlist(strsplit(central$caseTexts[a], "\n"))[3]
+  if (
+    length(unlist(strsplit(central$caseTexts[a], "\n"))[4]) != 1
+  ){
+    central$CV[a] <- 1
+    central$CVTEXT[a] <- unlist(strsplit(central$caseTexts[a], "\n"))[4]
+  }
+  else{
+    central$CV[a] <- 0
+    central$CVTEXT[a] <- NA
+  }
+  print(a)
+  a = a + 1
+}
+
+readLines("/Users/sunyufei/Desktop/公安部原党委委员、副部长孙力军严重违纪违法被开除党籍和公职————党纪政务处分——中央纪委国家监委网站.html")
+
+```
+
+```{python}
+
+import pandas as pd
+from aip import AipNlp
+import time
+
+CCDI = pd.read_csv("/Users/sunyufei/Documents/Yufei_Sun/THU/projects/CCDI/data/CCDIR_TEXT_part2.csv")
+
+# set API & read data
+APP_ID = '24047356'
+API_KEY = 'GDGSN58wcscFOBH8gv9lolcu'
+SECRET_KEY = 'GFBfGF7SYebN5bp7DEnN0LkOSnMh2aj8'
+client = AipNlp(APP_ID, API_KEY, SECRET_KEY)
+
+a = 0
+b = 0
+CCDI["PER"] = ""
+
+while a < len(CCDI["caseTitles"]):
+    result = client.lexer(CCDI["caseTitles"][a])
+    if b < len(result["items"]):
+      if result["items"][b]["ne"] == "PER" or result["items"][b]["pos"] == "nr":
+        CCDI["PER"][a] = result["items"][b]["item"]
+        print(a,result["items"][b]["item"])
+        b = b + 1
+      else:
+        print(a,b)
+        b = b + 1
+    else:
+      print(a,b)
+      a = a + 1
+      b = 0
+
+CCDI.to_csv("data/CCDIR_TEXT.csv")
+
+
+```
+
+
+# sentiment with time
+```{r}
+ccdiC <- read.csv("/Users/zhumeng/Documents/GitHub/CCDI/data/NLPpre.csv")
+
+# deal time
+
+ccdiword_date <- separate(data = ccdiC, 
+                  col = posttime, 
+                  into = c("date", "time"), 
+                  sep = " ") %>%
+  group_by(date) %>%
+  summarise(wordcountm = mean(wordcount))
+
+
+ccdiword_year <- separate(data = ccdiC, 
+                  col = posttime, 
+                  into = c("date", "time"), 
+                  sep = " ") %>%
+  separate(
+    col = date,
+    into = c("year","month"),
+    sep = "-"
+  ) %>%
+  group_by(year) %>%
+  summarise(wordcountm = mean(wordcount))
+
+# wordcount with time
+
+ggplot(ccdiword_year, 
+             aes(year,wordcountm)) +
+  geom_point() +
+  geom_line(aes(group = ""),color = "gray50") +
+  # fit model and remove CI
+  # geom_smooth(aes(group = ""),level = F,color = "gray50") +
+  labs(
+    x = "时间",
+    y = "字符数",
+    title = "字符数时间变化趋势",
+    caption = "数据来源：中纪委网站"
+  )+
+  theme(text = element_text(family='STKaiti'))
+```
+
+
+```{r}
+# sentiment
+## sentiment with with month
+
+ccdiC$p2_sentiment_nagtive <- (ccdiC$p2_sentiment_positive)
+
+ccdiSentiment_date <- separate(data = ccdiC, 
+                  col = posttime, 
+                  into = c("date", "time"), 
+                  sep = " ") %>%
+  separate(
+    col = date,
+    into = c("year","month"),
+    sep = "-"
+  ) %>%
+  group_by(year) %>%
+  summarise(sentimentm = mean(p2_sentiment_nagtive))
+
+ggplot(ccdiSentiment_date,
+             aes(year,sentimentm)) +
+  geom_line(group = "") +
+    labs(
+    x = "时间",
+    y = "负面情绪",
+    title = "负面情绪时间变化趋势",
+    caption = "数据来源：中纪委网站"
+  )+
+  theme(
+    text = element_text(family='STKaiti'),
+    plot.title = element_text(hjust = 0.5))
+
+```
+
+
+# explore 
+
+## Political discipline
+```{r}
+CM <- read_xlsx("/Users/zhumeng/Desktop/Fall semester_2021/CCDI/CM.xlsx")
+# CLIWC
+dictLiwc <- dictionary(file = "/Users/zhumeng/Desktop/Fall semester_2021/CCDI/sc_liwc.dic",format = "LIWC")
+```
+
+```{r}
+# Remove punctuation 
+cmpd <- gsub('，|；', ' ',CM$`Political discipline`)%>%
+  corpus() %>%
+  tokens() %>%
+  dfm()
+
+cmpd_lg <- dfm_lookup(cmpd, dictionary = dictLiwc, levels = 1) 
+print(cmPD_lg)
+
+# export
+cmpd <- as.data.frame(cmpd_lg)
+write.csv(cmpd,"/Users/zhumeng/Desktop/Fall semester_2021/CCDI/zggb.csv")
+```
+
+## Organizational discipline
+```{r}
+# Remove punctuation 
+cmod <- gsub('，|；', ' ',CM$`Organizational discipline`)%>%
+  corpus() %>%
+  tokens() %>%
+  dfm()
+
+cmod_lg <- dfm_lookup(cmod, dictionary = dictLiwc, levels = 1) 
+print(cmod_lg)
+
+# export
+cmod <- as.data.frame(cmod_lg)
+write.csv(cmod,"/Users/zhumeng/Desktop/Fall semester_2021/CCDI/zggb.csv")
+```
+
+
+## Moral discipline
+
+
+## Work discipline
+
+
+
+
+
+
+
+
+
